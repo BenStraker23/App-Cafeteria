@@ -8,11 +8,10 @@ function App() {
 
   return (
     <>
-      <div className='min-h-screen grid place-items-center bg-gray-100'>
-        <button className='px-4 py-3 text-white font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700'>
-          Hola, desde Programación Web 2 con Tailwind CSS
-        </button>
-      </div>
+     <h1 className='text-3x1 font-bold'>HOLA MUNDO DESDE EL CURSO DE PROGRAMACIÓN WEB 2</h1>
+     <div className='min-h-screen grid place-item-center bg-slate-600'>
+      <button className='px-6 py-3 text-white font-semibold rouded-lg bg-indigo-800 hover:bg-indigo-700'> Probando Tailwindcss </button>
+     </div>
     </>
   )
 }
