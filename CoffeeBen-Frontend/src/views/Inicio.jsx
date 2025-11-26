@@ -33,7 +33,7 @@ export default function Inicio() {
         <div className='grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3'>
           {productos.map(producto => (
               <Producto
-                key={producto.imagen}
+                key={producto.id}
                 producto={producto}
                 botonAgregar={true}
               />

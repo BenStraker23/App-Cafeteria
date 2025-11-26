@@ -9,12 +9,14 @@ export default function Ordenes() {
         headers: {
             Authorization: `Bearer ${token}`
         }
-    })
+    }).then(datos => datos.data)
     const {data, error, isLoading} = useSWR('/api/pedidos', fetcher, {refreshInterval: 1000})
 
-    const {handleClickCompletarPedido} = useQuiosco()
+    const {handleClickCompletarPedido, handleClickCancelarPedido} = useQuiosco()
 
     if(isLoading) return 'Cargando...'
+    if(error) return 'Error al cargar las órdenes'
+    if(!data || !data.data) return 'No hay datos disponibles'
 
   return (
     <div>
@@ -23,8 +25,11 @@ export default function Ordenes() {
           Administra las ordenes desde aquí.
         </p>
 
-        <div className='grid grid-cols-2 gap-5'>
-            {data.data.data.map(pedido => (
+        {data.data.length === 0 ? (
+            <p className='text-center text-2xl'>No hay órdenes pendientes</p>
+        ) : (
+            <div className='grid grid-cols-2 gap-5'>
+                {data.data.map(pedido => (
                 <div key={pedido.id} className="p-5 bg-white shadow space-y-2 border-b">
                     <p className='text-xl font-bold text-slate-600'>
                         Contenido del Pedido:
@@ -55,14 +60,23 @@ export default function Ordenes() {
                         <span className='font-normal text-slate-600'>{ formatearDinero( pedido.total )}</span>
                     </p>
 
-                    <button
-                        type="button"
-                        className='bg-indigo-600 hover:bg-indigo-800 px-5 py-2 rounded uppercase font-bold text-white text-center w-full cursor-pointer'
-                        onClick={() => handleClickCompletarPedido(pedido.id)}
-                    >Completar</button>
+                    <div className='flex gap-2'>
+                        <button
+                            type="button"
+                            className='bg-indigo-600 hover:bg-indigo-800 px-5 py-2 rounded uppercase font-bold text-white text-center flex-1 cursor-pointer transition-colors duration-200'
+                            onClick={() => handleClickCompletarPedido(pedido.id)}
+                        >Completar</button>
+                        
+                        <button
+                            type="button"
+                            className='bg-red-600 hover:bg-red-800 px-5 py-2 rounded uppercase font-bold text-white text-center flex-1 cursor-pointer transition-colors duration-200'
+                            onClick={() => handleClickCancelarPedido(pedido.id)}
+                        >Cancelar</button>
+                    </div>
                 </div>
             ))}
-        </div>
+            </div>
+        )}
     </div>
   )
 }

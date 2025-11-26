@@ -41,6 +41,11 @@ export default function ModalProducto() {
             <h1 className="text-3xl font-bold mt-5">
                 {producto.nombre}
             </h1>
+            {producto.cantidad && (
+                <p className="text-lg text-gray-600 mt-2 font-medium">
+                    Contenido: {producto.cantidad}
+                </p>
+            )}
             <p className="mt-5 font-black text-5xl text-amber-500">
                 { formatearDinero(producto.precio) }
             </p>

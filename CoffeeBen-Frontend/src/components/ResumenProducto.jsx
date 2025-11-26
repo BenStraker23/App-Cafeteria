@@ -1,30 +1,51 @@
 import useQuiosco from "../hooks/useQuiosco";
 import { formatearDinero } from "../helpers";
 
-export default function ResumenProducto({producto}) {
+export default function ResumenProducto({producto, disponible = true}) {
 
     const { handleEditarCantidad, handleEliminarProductoPedido } = useQuiosco()
     
     const { id, nombre, precio, cantidad } = producto
 
     return (
-        <div className="shadow space-y-1 p-4 bg-white border-b">
+        <div className={`shadow space-y-1 p-4 border-b relative ${
+            disponible ? 'bg-white' : 'bg-red-50 border-red-200'
+        }`}>
+            {!disponible && (
+                <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
+                    AGOTADO
+                </div>
+            )}
+            
             <div className="space-y-2">
-                <p className="text-xl font-bold">{nombre}</p>
-                <p className="text-lg font-bold text-amber-500">Cantidad: {cantidad}</p>
-                <p className="text-lg font-bold text-slate-600">
+                <p className={`text-xl font-bold ${!disponible ? 'text-gray-500 line-through' : ''}`}>
+                    {nombre}
+                </p>
+                <p className={`text-lg font-bold ${disponible ? 'text-amber-500' : 'text-gray-400'}`}>
+                    Cantidad: {cantidad}
+                </p>
+                <p className={`text-lg font-bold ${disponible ? 'text-slate-600' : 'text-gray-400'}`}>
                     Precio: {formatearDinero(precio)}
                 </p>
-                <p className="text-sm text-gray-700">
+                <p className={`text-sm ${disponible ? 'text-gray-700' : 'text-gray-400'}`}>
                     Subtotal: {formatearDinero(precio * cantidad)}
                 </p>
+                
+                {!disponible && (
+                    <p className="text-sm text-red-600 font-medium bg-red-100 p-2 rounded">
+                        ⚠️ Este producto ya no está disponible y será eliminado al procesar el pedido.
+                    </p>
+                )}
             </div>
 
-            <div className="flex gap-2 pb-4">
+            <div className={`flex gap-2 pb-4 ${!disponible ? 'opacity-50' : ''}`}>
                 <button
                     type="button"
-                    className="bg-sky-700 hover:bg-sky-800 flex px-5 py-2 text-white rounded-md font-bold uppercase shadow-md text-center"
-                    onClick={() => handleEditarCantidad(id)}
+                    className={`bg-sky-700 hover:bg-sky-800 flex px-5 py-2 text-white rounded-md font-bold uppercase shadow-md text-center ${
+                        !disponible ? 'cursor-not-allowed opacity-50' : ''
+                    }`}
+                    onClick={() => disponible && handleEditarCantidad(id)}
+                    disabled={!disponible}
                 >
                     <svg 
                         xmlns="http://www.w3.org/2000/svg" 
@@ -37,7 +58,7 @@ export default function ResumenProducto({producto}) {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
                     </svg>
 
-                    Editar
+                    {disponible ? 'Editar' : 'No Disponible'}
                 </button>
 
                 <button

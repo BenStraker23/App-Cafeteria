@@ -13,6 +13,7 @@ const QuioscoProvider = ({children}) => {
     const [producto, setProducto] = useState({}); // Estado para el producto seleccionado
     const [pedido, setPedido] = useState([]); // Estado para el pedido
     const [total, setTotal] = useState(0); // Estado para el total del pedido
+    const [modalPago, setModalPago] = useState(false); // Estado para el modal de pago
 
     useEffect(() => {
         obtenerCategorias()
@@ -38,6 +39,55 @@ const QuioscoProvider = ({children}) => {
         }
     }
 
+    // Función para verificar disponibilidad de productos en tiempo real
+    const verificarDisponibilidadProductos = async (productos) => {
+        const token = localStorage.getItem('AUTH_TOKEN')
+        try {
+            const {data} = await clienteAxios('/api/productos', {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
+            
+            const productosDisponibles = data.data
+            const productosAgotados = []
+            const productosValidos = []
+            
+            productos.forEach(productoPedido => {
+                const productoActual = productosDisponibles.find(p => p.id === productoPedido.id)
+                
+                if (!productoActual || !productoActual.disponible) {
+                    productosAgotados.push(productoPedido)
+                } else {
+                    productosValidos.push(productoPedido)
+                }
+            })
+            
+            return {
+                productosValidos,
+                productosAgotados,
+                todosDisponibles: productosAgotados.length === 0
+            }
+        } catch (error) {
+            console.error('Error verificando disponibilidad:', error)
+            throw new Error('Error al verificar disponibilidad de productos')
+        }
+    }
+
+    // Función para limpiar productos agotados del carrito
+    const limpiarProductosAgotados = (productosAgotados) => {
+        const pedidoActualizado = pedido.filter(producto => 
+            !productosAgotados.find(agotado => agotado.id === producto.id)
+        )
+        setPedido(pedidoActualizado)
+        
+        // Mostrar mensaje sobre productos eliminados
+        if (productosAgotados.length > 0) {
+            const nombresAgotados = productosAgotados.map(p => p.nombre).join(', ')
+            toast.warning(`Productos agotados eliminados del carrito: ${nombresAgotados}`)
+        }
+    }
+
     
     // por convencion las funciones que manejan eventos comienzan con handle
     const handleClickCategoria = id => {
@@ -47,6 +97,10 @@ const QuioscoProvider = ({children}) => {
 
     const handleClickModal = () => {
         setModal(!modal) // Funcion para abrir y cerrar el modal
+    }
+
+    const handleClickModalPago = () => {
+        setModalPago(!modalPago) // Funcion para abrir y cerrar el modal de pago
     }
 
     const handleSetProducto = producto => {
@@ -77,14 +131,28 @@ const QuioscoProvider = ({children}) => {
         toast.success('Producto Eliminado del Pedido');
     }
 
-    // Función para crear un nuevo pedido
-    const handleSubmitNuevaOrden = async () => {
+    // Función para procesar pago con tarjeta
+    const handleSubmitPagoConTarjeta = async (paymentData) => {
         const token = localStorage.getItem('AUTH_TOKEN')
         try {
-            const {data} = await clienteAxios.post('/api/pedidos', 
+            // Verificar disponibilidad de productos antes del pago
+            const verificacion = await verificarDisponibilidadProductos(pedido)
+            
+            if (!verificacion.todosDisponibles) {
+                // Limpiar productos agotados del carrito
+                limpiarProductosAgotados(verificacion.productosAgotados)
+                
+                throw new Error(
+                    `Algunos productos de su carrito ya no están disponibles. ` +
+                    `Se han eliminado automáticamente. Por favor, revise su pedido e intente nuevamente.`
+                )
+            }
+
+            const {data} = await clienteAxios.post('/api/payment/process', 
             {
+                payment_data: paymentData,
                 total,
-                productos: pedido.map(producto => {
+                productos: verificacion.productosValidos.map(producto => {
                     return {
                         id: producto.id,
                         cantidad: producto.cantidad
@@ -97,14 +165,41 @@ const QuioscoProvider = ({children}) => {
                 }
             })
 
-            toast.success(data.message);
-            setTimeout(() => {
-                setPedido([])
-            }, 1000);
+            if (data.success) {
+                toast.success(data.message);
+                setModalPago(false);
+                setPedido([]); // Limpiar pedido después del pago exitoso
+                return data;
+            } else {
+                throw new Error(data.message || 'Error al procesar el pago');
+            }
 
         } catch (error) {
-            console.log(error)
+            console.error('Error al procesar pago:', error)
+            let errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Error al procesar el pago';
+            
+            // Personalizar mensajes para casos específicos
+            if (errorMessage === 'Tarjeta bloqueada') {
+                errorMessage = 'Su tarjeta ha sido bloqueada contacte a su banco. Contacte a su institución financiera para más información.';
+            } else if (errorMessage === 'Fecha de expiracion invalida' || errorMessage.includes('expira')) {
+                errorMessage = 'Su tarjeta ha expirado. Por favor, utilice una tarjeta vigente o contacte a su banco para renovarla.';
+            } else if (errorMessage === 'Fondos insuficientes') {
+                errorMessage = 'Fondos insuficientes en su tarjeta. Verifique su saldo o utilice otro método de pago.';
+            } else if (errorMessage === 'Tarjeta no encontrada') {
+                errorMessage = 'Tarjeta no válida. Verifique los datos ingresados e intente nuevamente.';
+            } else if (errorMessage === 'Numero de tarjeta invalido') {
+                errorMessage = 'El número de tarjeta ingresado no es válido. Revise los dígitos e intente nuevamente.';
+            }
+            
+            toast.error(errorMessage);
+            throw error;
         }
+    }
+
+    // Función para crear un nuevo pedido (sin pago - obsoleta, mantener para compatibilidad)
+    const handleSubmitNuevaOrden = async () => {
+        // Abrir modal de pago en lugar de crear orden directamente
+        setModalPago(true);
     }
 
     const handleClickCompletarPedido = async id => {
@@ -115,21 +210,45 @@ const QuioscoProvider = ({children}) => {
                     Authorization: `Bearer ${token}`
                 }
             })
+            toast.success('Pedido completado exitosamente')
         } catch (error) {
             console.log(error)
+            toast.error('Error al completar el pedido')
+        }
+    }
+
+    const handleClickCancelarPedido = async id => {
+        const token = localStorage.getItem('AUTH_TOKEN')
+        try {
+            await clienteAxios.put(`/api/pedidos/${id}/cancel`, null, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
+            toast.success('Pedido cancelado exitosamente')
+        } catch (error) {
+            console.log(error)
+            const errorMessage = error.response?.data?.error || 'Error al cancelar el pedido'
+            toast.error(errorMessage)
         }
     }
 
     const handleClickProductoAgotado = async id => {
         const token = localStorage.getItem('AUTH_TOKEN')
         try {
-            await clienteAxios.put(`/api/productos/${id}`, null, {
+            const {data} = await clienteAxios.put(`/api/productos/${id}`, null, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
             })
+            
+            // Mostrar mensaje basado en la respuesta del backend
+            if (data.message) {
+                toast.success(data.message)
+            }
         } catch (error) {
             console.log(error)
+            toast.error('Error al cambiar disponibilidad del producto')
         }
     }
 
@@ -149,8 +268,14 @@ const QuioscoProvider = ({children}) => {
                 handleEliminarProductoPedido, // Pasamos la funcion para eliminar productos del pedido al contexto
                 total, // Pasamos el total del pedido al contexto
                 handleSubmitNuevaOrden, // Pasamos la funcion para crear nueva orden al contexto
+                modalPago, // Pasamos el estado del modal de pago al contexto
+                handleClickModalPago, // Pasamos la funcion para abrir/cerrar modal de pago al contexto
+                handleSubmitPagoConTarjeta, // Pasamos la funcion para procesar pago con tarjeta al contexto
                 handleClickCompletarPedido,
-                handleClickProductoAgotado
+                handleClickCancelarPedido, // Nueva función para cancelar pedidos
+                handleClickProductoAgotado,
+                verificarDisponibilidadProductos, // Nueva función para verificar stock
+                limpiarProductosAgotados // Nueva función para limpiar productos agotados
             }}
         >{children}</QuioscoContext.Provider>
     )

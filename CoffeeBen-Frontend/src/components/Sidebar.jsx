@@ -1,5 +1,6 @@
 import useQuiosco from "../hooks/useQuiosco" // Importamos el custom hook
 import { useAuth } from "../hooks/useAuth"
+import { Link } from "react-router-dom"
 import Categoria from "./Categoria"
 
 export default function Sidebar() {
@@ -21,6 +22,16 @@ export default function Sidebar() {
                     <div className="mt-4 p-3 bg-amber-50 rounded-md border border-amber-200">
                         <p className="text-amber-800 font-bold text-lg">¡Bienvenido!</p>
                         <p className="text-amber-700 text-sm">{user.name}</p>
+                        
+                        {/* Botón Administrar - Solo para administradores */}
+                        {user.admin && (
+                            <Link 
+                                to="/admin"
+                                className="inline-block mt-3 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded text-sm font-semibold transition-colors duration-200 shadow-sm"
+                            >
+                                Administrar
+                            </Link>
+                        )}
                     </div>
                 )}
             </div>
