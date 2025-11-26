@@ -1,0 +1,18 @@
+{
+  "name": "payment-microservice",
+  "script": "app.py",
+  "interpreter": "python",
+  "args": [],
+  "instances": 1,
+  "exec_mode": "fork",
+  "watch": true,
+  "ignore_watch": ["node_modules", "logs"],
+  "env": {
+    "NODE_ENV": "production",
+    "FLASK_ENV": "production"
+  },
+  "log_date_format": "YYYY-MM-DD HH:mm:ss",
+  "error_file": "./logs/payment-error.log",
+  "out_file": "./logs/payment-out.log",
+  "log_file": "./logs/payment-combined.log"
+}
