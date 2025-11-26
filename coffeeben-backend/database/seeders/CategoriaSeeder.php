@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use App\Models\Categoria;
 use Carbon\Carbon;
 
 
@@ -14,46 +14,42 @@ class CategoriaSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('categorias')->insert([
-            'nombre' => 'Café',
-            'icono' => 'coffee',
-            'created_at' => Carbon::now(),
-            'updated_at' => Carbon::now(),
-        ]);
+        $categorias = [
+            [
+                'nombre' => 'Café',
+                'icono' => 'coffee',
+            ],
+            [
+                'nombre' => 'Hamburguesas',
+                'icono' => 'croissant',
+            ],
+            [
+                'nombre' => 'Pizzas',
+                'icono' => 'hot_cakes',
+            ],
+            [
+                'nombre' => 'Donas',
+                'icono' => 'macarron',
+            ],
+            [
+                'nombre' => 'Pasteles',
+                'icono' => 'cappuccino',
+            ],
+            [
+                'nombre' => 'Galletas',
+                'icono' => 'ice_coffee',
+            ],
+            [
+                'nombre' => 'Bebidas',
+                'icono' => 'bebidas',
+            ]
+        ];
 
-        DB::table('categorias')->insert([
-            'nombre' => 'Hamburguesas',
-            'icono' => 'croissant',
-            'created_at' => Carbon::now(),
-            'updated_at' => Carbon::now(),
-        ]);
-
-        DB::table('categorias')->insert([
-            'nombre' => 'Pizzas',
-            'icono' => 'hot_cakes',
-            'created_at' => Carbon::now(),
-            'updated_at' => Carbon::now(),
-        ]);
-
-        DB::table('categorias')->insert([
-            'nombre' => 'Donas',
-            'icono' => 'macarron',
-            'created_at' => Carbon::now(),
-            'updated_at' => Carbon::now(),
-        ]);
-
-        DB::table('categorias')->insert([
-            'nombre' => 'Pasteles',
-            'icono' => 'cappuccino',
-            'created_at' => Carbon::now(),
-            'updated_at' => Carbon::now(),
-        ]);
-
-        DB::table('categorias')->insert([
-            'nombre' => 'Galletas',
-            'icono' => 'ice_coffee',
-            'created_at' => Carbon::now(),
-            'updated_at' => Carbon::now(),
-        ]);
+        foreach ($categorias as $categoria) {
+            Categoria::updateOrCreate(
+                ['nombre' => $categoria['nombre']], // Condición para buscar
+                $categoria // Datos a insertar o actualizar
+            );
+        }
     }
 }

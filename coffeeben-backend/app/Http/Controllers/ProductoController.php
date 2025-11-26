@@ -18,6 +18,14 @@ class ProductoController extends Controller
     }
 
     /**
+     * Display all products for admin panel (including unavailable ones)
+     */
+    public function indexAdmin()
+    {
+        return new ProductoCollection(Producto::orderBy('disponible', 'DESC')->orderBy('id', 'DESC')->get());
+    }
+
+    /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
@@ -38,10 +46,13 @@ class ProductoController extends Controller
      */
     public function update(Request $request, Producto $producto)
     {
-        $producto->disponible = 0;
+        // Toggle disponibilidad (cambiar entre disponible y agotado)
+        $producto->disponible = !$producto->disponible;
         $producto->save();
+        
         return [
-            'producto' => $producto
+            'producto' => $producto,
+            'message' => $producto->disponible ? 'Producto marcado como disponible' : 'Producto marcado como agotado'
         ];
     }
 

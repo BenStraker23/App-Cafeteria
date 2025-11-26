@@ -16,7 +16,7 @@ class PedidoController extends Controller
      */
     public function index()
     {
-        return new PedidoCollection(Pedido::with('user')->with('productos')->where('estado', 0)->get());
+        return new PedidoCollection(Pedido::with('user')->with('productos')->where('estado', Pedido::ESTADO_PENDIENTE)->get());
     }
 
     /**
@@ -70,10 +70,34 @@ class PedidoController extends Controller
      */
     public function update(Request $request, Pedido $pedido)
     {
-        $pedido->estado = 1;
+        // Marcar pedido como completado
+        $pedido->estado = Pedido::ESTADO_COMPLETADO;
         $pedido->save();
 
         return [
+            'message' => 'Pedido marcado como completado',
+            'pedido' => $pedido
+        ];
+    }
+
+    /**
+     * Cancel the specified pedido.
+     */
+    public function cancel(Pedido $pedido)
+    {
+        // Verificar que el pedido esté en estado pendiente
+        if ($pedido->estado !== Pedido::ESTADO_PENDIENTE) {
+            return response([
+                'error' => 'Solo se pueden cancelar pedidos pendientes'
+            ], 400);
+        }
+
+        // Marcar pedido como cancelado
+        $pedido->estado = Pedido::ESTADO_CANCELADO;
+        $pedido->save();
+
+        return [
+            'message' => 'Pedido cancelado correctamente',
             'pedido' => $pedido
         ];
     }
